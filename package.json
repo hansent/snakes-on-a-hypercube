@@ -1,0 +1,26 @@
+{
+  "name": "snakes-on-a-hypercube",
+  "version": "1.0.0",
+  "description": "There is moth!!#**@#! snakes on this hypercube!!",
+  "main": "index.js",
+  "scripts": {
+    "dev": "webpack-dev-server --watch --inline",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Thomas Hansen",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-core": "^6.9.1",
+    "babel-loader": "^6.2.4",
+    "babel-preset-es2015": "^6.9.0",
+    "webpack": "^1.13.1",
+    "webpack-dev-server": "^1.14.1",
+    "webpack-glsl-loader": "^1.0.1"
+  },
+  "dependencies": {
+    "dat-gui": "^0.5.0",
+    "three": "^0.77.1",
+    "three-orbit-controls": "^72.0.0",
+    "tween.js": "^16.3.4"
+  }
+}
