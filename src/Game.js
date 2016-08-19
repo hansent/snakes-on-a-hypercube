@@ -1,151 +1,136 @@
-import THREE from 'three';
-
-const boxGeometry = new THREE.BoxGeometry( 1, 1, 1 );
-const coneGeometry = new THREE.ConeGeometry( 0.4, 1, 6 );
-const purpleMaterial = new THREE.MeshPhongMaterial( {
-    color: 0x6F6CC5,
-    specular: 0xffffff,
-    shininess: 0
-});
+const THREE = require('three');
+const OrbitControls = require('three-orbit-controls')(THREE);
+const loop = require('raf-loop');
+const EventEmitter = require('events');
 
 
-function vec3(x,y,z){
-    return new THREE.Vector3(x,y,z);
-}
+module.exports = function game(){
 
-function mat4(){
-    return new THREE.Matrix4();
-}
+    var g = new EventEmitter();
 
+    let renderer = initRenderer();
+    let scene = initScene();
+    let camera = initCamera(scene);
 
-function makeSnakeCube(pos){
-    var cube = new THREE.Mesh( boxGeometry, purpleMaterial );
-    cube.position.set(pos.x, pos.y, pos.z);
-    console.log('cube position', cube.position, pos);
+    // make these accesible on game object
+    g.renderer = renderer;
+    g.camera = camera;
+    g.scene = scene;
 
-    return cube;
-}
+    // render loop using request animation frame
+    g._renderLoop = loop(function(dt){
+        g.emit('tick', dt);
+        renderer.render(scene, camera);
+    });
 
-
-function makeSnakeBodyPart(pos){
-    var bodyPart = new THREE.Mesh(coneGeometry, purpleMaterial);
-    bodyPart.rotateZ(-Math.PI/2);
-    bodyPart.position.set(pos.x, pos.y, pos.z);
-
-    return bodyPart;
-
-}
-
-
-class Snake {
-
-    constructor(){
-        this.scene = new THREE.Object3D();
-
-        this.headTransform = mat4().identity();
-        this.direction = vec3(1,0,0);
-        
-        this.bodyParts = [];
-
-        this.addBodyPart(vec3(0,0,0));
-        this.addBodyPart(vec3(-1,0,0));
-        this.addBodyPart(vec3(-2,0,0));
+    // start and stop functions to controll render loop
+    g.start = function(){
+        g.emit('start');
+        g._renderLoop.start();
+    }
+    g.stop = function(){
+        g.emit('stop');
+        g._renderLoop.stop();
     }
 
-    addBodyPart(pos){
-        console.log("add part", pos);
-        var cube = makeSnakeBodyPart(pos);
-        this.scene.add(cube)
-        this.bodyParts.push(cube);
+    // dont add renderer dom element to body until page is loaded
+    window.addEventListener('load', function() {
+        g.emit('init');
+        g.renderer.setSize(window.innerWidth, window.innerHeight);
+        g.renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+        g.emit('ready');
+    }, true);
+    
+    // always resize to fullscreen    
+    window.addEventListener('resize', function(){
+        let w = window.innerWidth;
+        let h = window.innerHeight;
+        g.emit('resize', w, h);
+        g.renderer.setSize(w, h);
+        g.camera.aspect = w / h;
+        g.camera.updateProjectionMatrix();
+    }, true); // use capture
+    
+    // pass on key event
+    window.addEventListener("keydown", function(event){
+        console.log('keydown', event.key);
+        g.emit('keydown', event);
+    }, true);
 
-    };
+
+    // finally return the game
+    return g;
+}
+
+
+
+
+
+
+
+
+function initRenderer(){
+    let renderer = new THREE.WebGLRenderer({antialias: true});
+    return renderer;
+}
+
+
+function initCamera(scene){
+    let fov = 75;
+    let aspect =  window.innerWidth / window.innerHeight;
+    let near = 0.1;
+    let far = 1000;
+    let cam = new THREE.PerspectiveCamera(fov, aspect, near, far);
+
+    let origin = new THREE.Vector3(0,0,0);
+    let position = new THREE.Vector3(0,20,10);
+    cam.position.copy(position);
+    cam.lookAt(origin);
+
+    cam.controls = new OrbitControls(cam);
+    cam.controls.enableKeys = false;
+
+    cam.light = new THREE.PointLight(0xaaeeaa);
+    cam.add(cam.light);
+    scene.add(cam);
 
     
-
-    tick(){
-
-        var oldHeadPos = this.bodyParts[0].position;
-
-        var direction = (vec3(1,0,0)).applyMatrix4(this.headTransform);
-        var newPos = vec3(0,0,0);
-        newPos.addVectors(oldHeadPos,  direction );
-
-        // take off the back and add at the start of array
-        var newHead = this.bodyParts.pop();
-        this.bodyParts.unshift(newHead);
-        newHead.position.copy(newPos);
-
-        if(newHead.position.x > 10)
-            newHead.position.setX(-10)
-        if(newHead.position.x < -10)
-            newHead.position.setX(10)
-        
-        if(newHead.position.y > 10)
-            newHead.position.setY(-10)
-        if(newHead.position.y < -10)
-            newHead.position.setY(10)
-    }
-
+    return cam;
 }
 
 
 
-class Game {
-
-    constructor(){
-        const scene = this.scene =  new THREE.Scene();
-
-        var light1 = new THREE.DirectionalLight(0xffffff, 1);
-        light1.position.set(100, 100, 50);
-        scene.add(light1);
-        
-        var light2 = new THREE.DirectionalLight(0xffffff, 1);
-        light2.position.set(-100, -200, -50);
-        scene.add(light2);
-
-        var grid = new THREE.GridHelper(10, 1, 0xff0000, 0x333333);
-        scene.add(grid);
-
-        this.snake = new Snake();
-        scene.add(this.snake.scene);
-        
-        
-        
-        setInterval(()=>{
-            this.tick();
-        }, 500)
-
-    }
-
-
-    onKey(){
-        const key = event.keyCode;
-        
-        if (key == 37) // left
-            this.snake.turnLeft();
-
-        if (key == 39) // right
-            this.snake.turnRight();
-
-        if (key == 38) // right
-            this.snake.turnDown();
-        
-        if (key == 40) // right
-            this.snake.turnUp();
-        
-    }
-
-
-    tick(){
-        //this.snake.tick();
-        //this.snake.position.add(this.v_forward);
-    }
-
-    
-
-    
-    
+function initGrid(){
+    return 
 }
 
 
-module.exports = Game;
+function initScene(){
+    let scene = new THREE.Scene();
+
+    let light = new THREE.AmbientLight( 0x404040 );
+    scene.add( light );
+    
+    let grid = new THREE.GridHelper(10,1, 0xff0000, 0x333333);
+    scene.add(grid);
+
+    return scene;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
