@@ -21,19 +21,17 @@ window.printSnake = printSnake;
 function initScene(){
     g.food = food.initFood();
     g.scene.add(g.food);
-    
     g.snake = initSnake(4);
     g.scene.add(g.snake);
-
 }
 
+
 function update(){
-    
     updateDirection();
     moveSnake();
     updateFood();
-    
 }
+
 
 function onKey(event){
     console.log("keydown", event);
@@ -48,24 +46,20 @@ function onKey(event){
         return;
     }
 
-
     if (event.key == "f"){
         console.log(g.food);
         updateFood();
         console.log(g.food);
         return;
     }
-
     
     g.lastKey = event.key;
     update();
 }
 
 
-
-
 function updateDirection(){
-    let d = gx.vec3(1,0,0);
+    let d = g.snake.userData.direction;
 
     if (_.includes(['ArrowLeft', 'a'], g.lastKey))
         d.set(-1,0,0);
@@ -79,7 +73,6 @@ function updateDirection(){
         d.set(0,1,0);
     if (g.lastKey == 's')
         d.set(0,-1,0);    
-    g.snake.userData.direction.copy(d);
 }
 
 
@@ -96,10 +89,7 @@ function updateFood(){
 
     if( ate_food )
         growSnake();
-
-    
 }
-
 
 
 function growSnake(incr){
@@ -138,12 +128,6 @@ function snakeBlock(age){
     block.userData.age = age || 0;
     return block;
 }
-
-
-
-
-
-
 
 
 function initSnake(length){

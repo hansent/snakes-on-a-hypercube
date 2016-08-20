@@ -2,8 +2,6 @@ var _ = require('lodash');
 var path = require('path');
 var webpack = require('webpack');
 
-var DashboardPlugin = require('webpack-dashboard/plugin');
-
 
 var file_path = _.partial(path.resolve, __dirname);
 
@@ -37,11 +35,6 @@ module.exports = {
             
         ]
     },
-
-    plugins: [
-        new DashboardPlugin()
-    ]
-    
 };
 
 console.log( file_path('public'))
